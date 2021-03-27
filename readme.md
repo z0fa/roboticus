@@ -1,0 +1,3 @@
+# Roboticus: a Discord interactions framework
+
+wip...
