@@ -1,6 +1,9 @@
 import fetch from "cross-fetch";
 import { ApplicationCommand, BotCommand } from "../types";
 
+require("dotenv-flow").config();
+require("ts-node").register({});
+
 const APP_ID = process.env.APP_ID
 const BOT_TOKEN = process.env.BOT_TOKEN
 
