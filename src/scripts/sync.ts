@@ -1,14 +1,14 @@
 import fetch from "cross-fetch";
-import { ApplicationCommand, BotCommand } from "../types";
+import { BotCommand } from "../helpers/define-command";
+import { ApplicationCommand } from "../types";
 
 require("dotenv-flow").config();
 require("ts-node").register({});
 
-const APP_ID = process.env.APP_ID
-const BOT_TOKEN = process.env.BOT_TOKEN
+const APP_ID = process.env.APP_ID;
+const BOT_TOKEN = process.env.BOT_TOKEN;
 
 async function request(path: string, data: any = {}, method: string = "get") {
-
   let body = null;
   let headers = {
     authorization: `Bot ${BOT_TOKEN}`,
@@ -36,26 +36,50 @@ async function request(path: string, data: any = {}, method: string = "get") {
 }
 
 export default async function () {
-  const localCommands: BotCommand[] = await import(process.cwd() + "/index.ts").then((r) => r.default)
-  const globalCommands: any[] = await request("commands").then((r) => r.json());
-  // const guildCommands =  await request(`guilds/${guildId}/commands`, "get")
+  const localCommands: BotCommand[] = await import(
+    process.cwd() + "/index.ts"
+  ).then((r) => r.default);
 
-  const removedCommands: ApplicationCommand[] = globalCommands.filter(
-    (c1) => !localCommands.find((c2) => c2.name === c1.name)
-  );
+  const commandScopes = Array.from(
+    localCommands.reduce((scopes, command) => {
+      command.scope.forEach((scope) => {
+        scopes.add(scope);
+      });
 
-  for (const cmd of removedCommands) {
-    await request(`commands/${cmd.id}`, null, "delete");
+      return scopes;
+    }, new Set())
+  ) as string[];
 
-    console.log(`❌ Removed command ${cmd.name}`)
-  }
+  for (const scope of commandScopes) {
+    let listPath = scope === "global" ? "commands" : `guilds/${scope}/commands`;
+    let deletePath =
+      scope === "global" ? "commands/" : `guilds/${scope}/commands/`;
 
-  for (const cmd of localCommands) {
-    const { handler, ...data } = cmd;
+    const scopedCommands = localCommands.filter((command) =>
+      command.scope.includes(scope)
+    );
 
-    await request("commands", data, "post");
+    const remoteCommands: ApplicationCommand[] = await request(
+      listPath
+    ).then((r) => r.json());
 
-    console.log(`✅ Upserted command ${cmd.name}`)
+    const removedCommands = remoteCommands.filter(
+      (localCmd) =>
+        !scopedCommands.find((remoteCmd) => localCmd.name === remoteCmd.name)
+    );
+
+    for (const command of removedCommands) {
+      await request(`${deletePath}/${command.id}`, null, "delete");
+
+      console.log(`❌ [${scope}] Removed command ${command.name}`);
+    }
+
+    for (const command of scopedCommands) {
+      const { handler, scope, ...payload } = command;
+
+      await request("commands", payload, "post");
+
+      console.log(`✅ [${scope}] Synced command ${command.name}`);
+    }
   }
 }
-

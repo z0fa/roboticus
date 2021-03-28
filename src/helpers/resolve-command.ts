@@ -1,20 +1,21 @@
 import cmdDefault from "../commands/default";
 import cmdPing from "../commands/ping";
-import { BotCommand, Interaction, InteractionType } from "../types";
+import { Interaction, InteractionType } from "../types";
+import { BotCommand } from "./define-command";
 import ResHelper from "./res-helper";
 
-export default function (req: Interaction, commands: BotCommand[]) {
+export default function (payload: Interaction, commands: BotCommand[]) {
   const res = new ResHelper();
 
-  if (req.type === InteractionType.Ping) {
-    return cmdPing.handler(req, res);
+  if (payload.type === InteractionType.Ping) {
+    return cmdPing.handler(payload, res);
   }
 
-  const command = commands.find((cmd) => cmd.name === req.data.name);
+  const command = commands.find((cmd) => cmd.name === payload.data.name);
 
   if (command) {
-    return command.handler(req, res);
+    return command.handler(payload, res);
   }
 
-  return cmdDefault.handler(req, res);
+  return cmdDefault.handler(payload, res);
 }

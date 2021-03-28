@@ -230,7 +230,3 @@ export interface MessageInteraction {
   name: string;
   user: User;
 }
-
-export type BotCommand = Omit<ApplicationCommand, "id" | "application_id"> & {
-  handler: (req: Interaction, res: ResHelper) => InteractionResponse;
-};

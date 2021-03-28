@@ -8,7 +8,6 @@ export default function (
 ): boolean {
   try {
     const message = Buffer.from(timestamp + body, "utf-8");
-
     const signatureData = Buffer.from(signature, "hex");
     const publicKeyData = Buffer.from(clientPublicKey, "hex");
 
